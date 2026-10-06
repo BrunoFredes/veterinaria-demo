@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Cliente {
+  id            Int      @id @default(autoincrement())
+  nombre        String
+  telefono      String?
+  direccion     String?
+  observaciones String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trabajos Trabajo[]
+}
+
+model Trabajo {
+  id          Int      @id @default(autoincrement())
+  clienteId   Int
+  fecha       DateTime @default(now())
+  descripcion String
+  total       Int
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+  pagos   Pago[]
+}
+
+model Pago {
+  id            Int      @id @default(autoincrement())
+  trabajoId     Int
+  fecha         DateTime @default(now())
+  monto         Int
+  medioPago     String
+  observaciones String?
+  createdAt     DateTime @default(now())
+
+  trabajo    Trabajo         @relation(fields: [trabajoId], references: [id])
+  movimiento MovimientoCaja?
+}
+
+model MovimientoCaja {
+  id            Int      @id @default(autoincrement())
+  fecha         DateTime @default(now())
+  tipo          String
+  concepto      String
+  monto         Int
+  medioPago     String
+  observaciones String?
+  createdAt     DateTime @default(now())
+
+  pagoId Int?  @unique
+  pago   Pago? @relation(fields: [pagoId], references: [id])
+}
