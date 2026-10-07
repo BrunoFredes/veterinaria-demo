@@ -6,6 +6,8 @@ import trabajosRouter from "./routes/trabajos.routes.js";
 import pagosRouter from "./routes/pagos.routes.js";
 import movimientosRouter from "./routes/movimientos.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
+import backupRouter from "./routes/backup.routes.js";
+import { startBackupScheduler } from "./services/backup.scheduler.js";
 
 const app = express();
 const PORT = 3000;
@@ -25,7 +27,10 @@ app.use("/api/trabajos", trabajosRouter);
 app.use("/api/pagos", pagosRouter);
 app.use("/api/movimientos", movimientosRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/backup", backupRouter);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Backend corriendo en http://localhost:${PORT}`);
+
+  await startBackupScheduler();
 });
