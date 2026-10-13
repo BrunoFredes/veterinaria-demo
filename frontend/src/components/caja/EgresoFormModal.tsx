@@ -1,4 +1,3 @@
-
 import { useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 
@@ -7,6 +6,7 @@ import type {
   MedioPago,
   MovimientoCaja,
 } from "../../types/movimientoCaja";
+import { useToast } from "../ui/ToastProvider";
 
 interface EgresoFormModalProps {
   onClose: () => void;
@@ -28,6 +28,13 @@ function getToday() {
   return `${year}-${month}-${day}`;
 }
 
+const formatMoney = (amount: number) =>
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(amount);
+
 function EgresoFormModal({ onClose, onSaved }: EgresoFormModalProps) {
   const [concepto, setConcepto] = useState("");
   const [monto, setMonto] = useState("");
@@ -36,6 +43,7 @@ function EgresoFormModal({ onClose, onSaved }: EgresoFormModalProps) {
   const [observaciones, setObservaciones] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,13 +75,20 @@ function EgresoFormModal({ onClose, onSaved }: EgresoFormModalProps) {
         observaciones: observaciones.trim() || null,
       });
 
+      showToast(
+        `Egreso de ${formatMoney(amount)} registrado correctamente.`,
+        "success"
+      );
+
       onSaved();
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "No se pudo registrar el egreso."
-      );
+          : "No se pudo registrar el egreso.";
+
+      setError(message);
+      showToast(message, "error");
     } finally {
       setSaving(false);
     }
@@ -171,9 +186,7 @@ function EgresoFormModal({ onClose, onSaved }: EgresoFormModalProps) {
                 rows={3}
                 maxLength={500}
                 value={observaciones}
-                onChange={(event) =>
-                  setObservaciones(event.target.value)
-                }
+                onChange={(event) => setObservaciones(event.target.value)}
                 placeholder="Información adicional (opcional)"
               />
             </label>

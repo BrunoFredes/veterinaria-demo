@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 
 import { api } from "../../services/api";
 import type { Pago, Trabajo } from "../../types/cuentaCorriente";
+import { useToast } from "../ui/ToastProvider";
 
 interface PagoFormModalProps {
   trabajo: Trabajo;
@@ -38,6 +39,7 @@ function PagoFormModal({
   const [observaciones, setObservaciones] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,13 +72,24 @@ function PagoFormModal({
         observaciones: observaciones.trim() || null,
       });
 
+      const medioLabel =
+        mediosPago.find((medio) => medio.value === medioPago)?.label ??
+        medioPago;
+
+      showToast(
+        `Cobro de ${formatMoney(amount)} registrado (${medioLabel}).`,
+        "success"
+      );
+
       onSaved();
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "No se pudo registrar el pago."
-      );
+          : "No se pudo registrar el pago.";
+
+      setError(message);
+      showToast(message, "error");
     } finally {
       setSaving(false);
     }
@@ -171,9 +184,7 @@ function PagoFormModal({
                 rows={2}
                 maxLength={500}
                 value={observaciones}
-                onChange={(event) =>
-                  setObservaciones(event.target.value)
-                }
+                onChange={(event) => setObservaciones(event.target.value)}
                 placeholder="Detalle opcional del cobro"
               />
             </label>
@@ -210,3 +221,4 @@ function PagoFormModal({
 }
 
 export default PagoFormModal;
+

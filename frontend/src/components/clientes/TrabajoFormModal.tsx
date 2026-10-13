@@ -3,12 +3,20 @@ import { X } from "lucide-react";
 
 import { api } from "../../services/api";
 import type { Trabajo } from "../../types/cuentaCorriente";
+import { useToast } from "../ui/ToastProvider";
 
 interface TrabajoFormModalProps {
   clienteId: number;
   onClose: () => void;
   onSaved: () => void;
 }
+
+const formatMoney = (amount: number) =>
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(amount);
 
 function TrabajoFormModal({
   clienteId,
@@ -22,6 +30,7 @@ function TrabajoFormModal({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,13 +60,20 @@ function TrabajoFormModal({
           : undefined,
       });
 
+      showToast(
+        `Trabajo registrado por ${formatMoney(amount)}.`,
+        "success"
+      );
+
       onSaved();
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "No se pudo registrar el trabajo."
-      );
+          : "No se pudo registrar el trabajo.";
+
+      setError(message);
+      showToast(message, "error");
     } finally {
       setSaving(false);
     }

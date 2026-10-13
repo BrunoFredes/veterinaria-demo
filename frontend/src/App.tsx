@@ -7,6 +7,7 @@ import ClienteDetallePage from "./pages/ClienteDetallePage";
 import CajaPage from "./pages/CajaPage";
 import ConfiguracionPage from "./pages/ConfiguracionPage";
 
+
 function App() {
   return (
     <BrowserRouter>

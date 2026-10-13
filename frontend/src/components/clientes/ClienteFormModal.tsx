@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 
 import { api } from "../../services/api";
 import type { Cliente, ClienteFormData } from "../../types/cliente";
+import { useToast } from "../ui/ToastProvider";
 
 interface ClienteFormModalProps {
   cliente?: Cliente | null;
@@ -25,6 +26,7 @@ function ClienteFormModal({
   const [form, setForm] = useState<ClienteFormData>(initialForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const isEditing = Boolean(cliente);
 
@@ -42,10 +44,7 @@ function ClienteFormModal({
     });
   }, [cliente]);
 
-  function handleChange(
-    field: keyof ClienteFormData,
-    value: string
-  ) {
+  function handleChange(field: keyof ClienteFormData, value: string) {
     setForm((current) => ({
       ...current,
       [field]: value,
@@ -73,17 +72,21 @@ function ClienteFormModal({
     try {
       if (cliente) {
         await api.put<Cliente>(`/clientes/${cliente.id}`, payload);
+        showToast("Cliente actualizado correctamente.", "success");
       } else {
         await api.post<Cliente>("/clientes", payload);
+        showToast("Cliente registrado correctamente.", "success");
       }
 
       onSaved();
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "No se pudo guardar el cliente."
-      );
+          : "No se pudo guardar el cliente.";
+
+      setError(message);
+      showToast(message, "error");
     } finally {
       setSaving(false);
     }
@@ -106,9 +109,7 @@ function ClienteFormModal({
       >
         <header className="modal-header">
           <div>
-            <span className="page-eyebrow">
-              Gestión de clientes
-            </span>
+            <span className="page-eyebrow">Gestión de clientes</span>
             <h3 id="cliente-form-title">
               {isEditing ? "Editar cliente" : "Nuevo cliente"}
             </h3>
@@ -215,3 +216,4 @@ function ClienteFormModal({
 }
 
 export default ClienteFormModal;
+

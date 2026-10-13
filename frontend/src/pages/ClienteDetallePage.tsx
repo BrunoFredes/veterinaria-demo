@@ -21,6 +21,7 @@ import type {
   Trabajo,
 } from "../types/cuentaCorriente";
 
+
 const formatMoney = (amount: number) =>
   new Intl.NumberFormat("es-AR", {
     style: "currency",

@@ -1,295 +1,383 @@
+
 import { useEffect, useState } from "react";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Banknote,
-  CircleAlert,
-  Clock3,
-  PawPrint,
-  RefreshCw,
-  Wallet,
-} from "lucide-react";
-
+import { Link } from "react-router-dom";
 import { api } from "../services/api";
-import type {
-  DashboardData,
-  Movimiento,
-} from "../types/dashboard";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/ToastProvider";
 
-const formatMoney = (amount: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(amount);
+interface DashboardData {
+  clientes: {
+    total: number;
+    alDia: number;
+    deudores: number;
+  };
+  trabajos: {
+    totalFacturado: number;
+    totalPagado: number;
+    totalDeuda: number;
+  };
+  caja: {
+    totalIngresos: number;
+    totalEgresos: number;
+    saldo: number;
+    ingresosPorMedio: {
+      efectivo: number;
+      transferencia: number;
+      tarjeta: number;
+    };
+    egresosPorMedio: {
+      efectivo: number;
+      transferencia: number;
+      tarjeta: number;
+    };
+  };
+}
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+const formatoPesos = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  maximumFractionDigits: 0,
+});
 
-function DashboardPage() {
-  const [dashboard, setDashboard] =
-    useState<DashboardData | null>(null);
+function pesos(monto: number): string {
+  return formatoPesos.format(monto);
+}
 
-  const [movimientos, setMovimientos] =
-    useState<Movimiento[]>([]);
+const mediosPago = [
+  { key: "efectivo", label: "Efectivo" },
+  { key: "transferencia", label: "Transferencia" },
+  { key: "tarjeta", label: "Tarjeta" },
+] as const;
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function loadDashboard() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [dashboardData, movimientosData] =
-        await Promise.all([
-          api.get<DashboardData>("/dashboard"),
-          api.get<Movimiento[]>("/movimientos"),
-        ]);
-
-      setDashboard(dashboardData);
-      setMovimientos(movimientosData);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudieron cargar los datos."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+export default function DashboardPage() {
+  const [datos, setDatos] = useState<DashboardData | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    void loadDashboard();
+    let activo = true;
+
+    async function cargarDashboard() {
+      try {
+        setCargando(true);
+        setError("");
+
+        const respuesta = await api.get<DashboardData>("/dashboard");
+
+        if (activo) {
+          setDatos(respuesta);
+        }
+      } catch {
+        if (activo) {
+          setError(
+            "No se pudieron cargar los datos. Verificá que el backend esté funcionando e intentá nuevamente.",
+          );
+        }
+      } finally {
+        if (activo) {
+          setCargando(false);
+        }
+      }
+    }
+
+    void cargarDashboard();
+
+    return () => {
+      activo = false;
+    };
   }, []);
 
-  const metrics = dashboard
-    ? [
-        {
-          label: "Saldo en caja",
-          value: formatMoney(dashboard.caja.saldo),
-          detail: "Ingresos menos egresos",
-          icon: Wallet,
-          color: "green",
-        },
-        {
-          label: "Ingresos",
-          value: formatMoney(dashboard.caja.totalIngresos),
-          detail: "Total de cobros registrados",
-          icon: ArrowDownRight,
-          color: "blue",
-        },
-        {
-          label: "Egresos",
-          value: formatMoney(dashboard.caja.totalEgresos),
-          detail: "Total de gastos registrados",
-          icon: ArrowUpRight,
-          color: "orange",
-        },
-        {
-          label: "Deuda pendiente",
-          value: formatMoney(dashboard.trabajos.totalDeuda),
-          detail: `${dashboard.clientes.deudores} clientes con deuda`,
-          icon: CircleAlert,
-          color: "red",
-        },
-      ]
-    : [];
+  if (cargando) {
+    return (
+      <main className="page dashboard-page">
+        <div className="loading-state">Cargando dashboard...</div>
+      </main>
+    );
+  }
 
-  const recentMovements = [...movimientos]
-    .sort(
-      (a, b) =>
-        new Date(b.fecha).getTime() -
-        new Date(a.fecha).getTime()
-    )
-    .slice(0, 5);
+  if (error || !datos) {
+    return (
+      <main className="page dashboard-page">
+        <div className="page-heading">
+          <div>
+            <p className="page-eyebrow">Resumen general</p>
+            <h1>Dashboard</h1>
+          </div>
+        </div>
 
-  return (
-    <section className="page">
-      <div className="page-heading dashboard-heading">
-        <div>
-          <span className="page-eyebrow">Inicio</span>
-          <h2>Dashboard</h2>
-          <p>
-            Resumen financiero y administrativo de la veterinaria.
-          </p>
+        <div className="alert-error dashboard-error">
+          {error || "No hay datos disponibles."}
         </div>
 
         <button
+          className="button button-primary"
+          onClick={() => window.location.reload()}
           type="button"
-          className="button button-secondary"
-          onClick={() => void loadDashboard()}
-          disabled={loading}
         >
-          <RefreshCw size={16} />
-          Actualizar
+          Reintentar
         </button>
-      </div>
+      </main>
+    );
+  }
 
-      {error && (
-        <div className="alert-error" role="alert">
-          <CircleAlert size={18} />
+  const { clientes, trabajos, caja } = datos;
+  const maximoMedioPago = Math.max(
+    caja.ingresosPorMedio.efectivo,
+    caja.ingresosPorMedio.transferencia,
+    caja.ingresosPorMedio.tarjeta,
+    caja.egresosPorMedio.efectivo,
+    caja.egresosPorMedio.transferencia,
+    caja.egresosPorMedio.tarjeta,
+    1,
+  );
+
+  const porcentaje = (valor: number) =>
+    Math.max(0, Math.min(100, (valor / maximoMedioPago) * 100));
+
+  const porcentajeClientesAlDia =
+    clientes.total > 0 ? (clientes.alDia / clientes.total) * 100 : 0;
+
+  return (
+    <main className="page dashboard-page">
+      <header className="page-heading dashboard-heading">
+        <div>
+          <p className="page-eyebrow">Panel de control</p>
+          <h1>Dashboard</h1>
+          <p className="dashboard-subtitle">
+            Un vistazo al estado de los clientes, los trabajos y la caja.
+          </p>
+        </div>
+
+        <div className="dashboard-actions">
+          <Link to="/clientes" className="button button-secondary">
+            Ver clientes
+          </Link>
+          <Link to="/caja" className="button button-primary">
+            Ir a caja
+          </Link>
+        </div>
+      </header>
+
+      <section className="dashboard-section" aria-labelledby="finanzas-title">
+        <div className="dashboard-section-heading">
           <div>
-            <strong>No se pudieron cargar los datos</strong>
-            <p>{error}</p>
+            <p className="page-eyebrow">Finanzas</p>
+            <h2 id="finanzas-title">Resumen económico</h2>
           </div>
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => void loadDashboard()}
-          >
-            Reintentar
-          </button>
         </div>
-      )}
 
-      {loading && !dashboard ? (
-        <div className="loading-state">
-          <RefreshCw size={22} className="spin" />
-          <span>Cargando información...</span>
+        <div className="dashboard-metrics">
+          <article className="dashboard-metric">
+            <div className="dashboard-metric-top">
+              <span className="dashboard-metric-label">Total facturado</span>
+              <span className="dashboard-metric-icon">↗</span>
+            </div>
+            <strong>{pesos(trabajos.totalFacturado)}</strong>
+            <span className="dashboard-metric-caption">
+              Importe de todos los trabajos
+            </span>
+          </article>
+
+          <article className="dashboard-metric">
+            <div className="dashboard-metric-top">
+              <span className="dashboard-metric-label">Total cobrado</span>
+              <span className="dashboard-metric-icon">✓</span>
+            </div>
+            <strong className="dashboard-positive">
+              {pesos(trabajos.totalPagado)}
+            </strong>
+            <span className="dashboard-metric-caption">
+              Pagos registrados de clientes
+            </span>
+          </article>
+
+          <article className="dashboard-metric">
+            <div className="dashboard-metric-top">
+              <span className="dashboard-metric-label">Deuda pendiente</span>
+              <span className="dashboard-metric-icon">◷</span>
+            </div>
+            <strong
+              className={
+                trabajos.totalDeuda > 0
+                  ? "dashboard-warning"
+                  : "dashboard-positive"
+              }
+            >
+              {pesos(trabajos.totalDeuda)}
+            </strong>
+            <span className="dashboard-metric-caption">
+              Saldo que deben los clientes
+            </span>
+          </article>
+
+          <article className="dashboard-metric dashboard-metric-highlight">
+            <div className="dashboard-metric-top">
+              <span className="dashboard-metric-label">Saldo de caja</span>
+              <span className="dashboard-metric-icon">＄</span>
+            </div>
+            <strong
+              className={
+                caja.saldo < 0 ? "dashboard-negative" : "dashboard-positive"
+              }
+            >
+              {pesos(caja.saldo)}
+            </strong>
+            <span className="dashboard-metric-caption">
+              Ingresos menos egresos registrados
+            </span>
+          </article>
         </div>
-      ) : dashboard ? (
-        <>
-          <div className="metrics-grid">
-            {metrics.map((metric) => {
-              const Icon = metric.icon;
+      </section>
 
-              return (
-                <article className="metric-card" key={metric.label}>
-                  <div className="metric-card-top">
-                    <span className="metric-label">
-                      {metric.label}
-                    </span>
+      <section className="dashboard-lower-grid">
+        <article className="panel dashboard-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="page-eyebrow">Cartera de clientes</p>
+              <h2>Estado de clientes</h2>
+            </div>
+            <Link to="/clientes" className="dashboard-text-link">
+              Ver listado →
+            </Link>
+          </div>
 
-                    <div className={`metric-icon ${metric.color}`}>
-                      <Icon size={20} />
-                    </div>
+          <div className="dashboard-client-total">
+            <strong>{clientes.total}</strong>
+            <span>
+              {clientes.total === 1 ? "cliente registrado" : "clientes registrados"}
+            </span>
+          </div>
+
+          <div className="dashboard-client-bar" aria-label="Proporción de clientes al día y deudores">
+            <div
+              className="dashboard-client-bar-paid"
+              style={{ width: `${porcentajeClientesAlDia}%` }}
+            />
+          </div>
+
+          <div className="dashboard-client-legend">
+            <div>
+              <span className="dashboard-legend-dot dashboard-dot-paid" />
+              <span>Al día</span>
+              <strong>{clientes.alDia}</strong>
+            </div>
+            <div>
+              <span className="dashboard-legend-dot dashboard-dot-debt" />
+              <span>Deudores</span>
+              <strong>{clientes.deudores}</strong>
+            </div>
+          </div>
+
+          {clientes.deudores > 0 ? (
+            <div className="dashboard-notice dashboard-notice-warning">
+              Hay {clientes.deudores}{" "}
+              {clientes.deudores === 1
+                ? "cliente con deuda pendiente."
+                : "clientes con deudas pendientes."}
+            </div>
+          ) : (
+            <div className="dashboard-notice dashboard-notice-success">
+              Todos los clientes están al día.
+            </div>
+          )}
+        </article>
+
+        <article className="panel dashboard-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="page-eyebrow">Movimientos</p>
+              <h2>Resumen de caja</h2>
+            </div>
+            <Link to="/caja" className="dashboard-text-link">
+              Ver caja →
+            </Link>
+          </div>
+
+          <div className="dashboard-cash-summary">
+            <div>
+              <span>Ingresos</span>
+              <strong className="dashboard-positive">
+                {pesos(caja.totalIngresos)}
+              </strong>
+            </div>
+            <div>
+              <span>Egresos</span>
+              <strong className="dashboard-negative">
+                {pesos(caja.totalEgresos)}
+              </strong>
+            </div>
+          </div>
+
+          <div className="dashboard-cash-balance">
+            <span>Saldo neto</span>
+            <strong
+              className={
+                caja.saldo < 0 ? "dashboard-negative" : "dashboard-positive"
+              }
+            >
+              {pesos(caja.saldo)}
+            </strong>
+          </div>
+        </article>
+      </section>
+
+      <section className="panel dashboard-payment-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="page-eyebrow">Medios de pago</p>
+            <h2>Ingresos y egresos por medio</h2>
+          </div>
+        </div>
+
+        <div className="dashboard-payment-legend">
+          <span>
+            <i className="dashboard-legend-dot dashboard-dot-income" />
+            Ingresos
+          </span>
+          <span>
+            <i className="dashboard-legend-dot dashboard-dot-expense" />
+            Egresos
+          </span>
+        </div>
+
+        <div className="dashboard-payment-list">
+          {mediosPago.map((medio) => {
+            const ingresos = caja.ingresosPorMedio[medio.key];
+            const egresos = caja.egresosPorMedio[medio.key];
+
+            return (
+              <div className="dashboard-payment-row" key={medio.key}>
+                <div className="dashboard-payment-name">{medio.label}</div>
+
+                <div className="dashboard-payment-bars">
+                  <div className="dashboard-payment-bar-track">
+                    <div
+                      className="dashboard-payment-bar dashboard-payment-bar-income"
+                      style={{ width: `${porcentaje(ingresos)}%` }}
+                    />
                   </div>
-
-                  <strong className="metric-value">
-                    {metric.value}
-                  </strong>
-
-                  <span className="metric-detail">
-                    {metric.detail}
-                  </span>
-                </article>
-              );
-            })}
-          </div>
-
-          <div className="dashboard-lower-grid">
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h3>Movimientos recientes</h3>
-                  <p>Últimos ingresos y egresos registrados</p>
+                  <div className="dashboard-payment-bar-track">
+                    <div
+                      className="dashboard-payment-bar dashboard-payment-bar-expense"
+                      style={{ width: `${porcentaje(egresos)}%` }}
+                    />
+                  </div>
                 </div>
 
-                <Clock3 size={19} />
-              </div>
-
-              {recentMovements.length === 0 ? (
-                <div className="panel-empty">
-                  Todavía no hay movimientos registrados.
+                <div className="dashboard-payment-values">
+                  <span className="dashboard-positive">{pesos(ingresos)}</span>
+                  <span className="dashboard-negative">{pesos(egresos)}</span>
                 </div>
-              ) : (
-                <div className="movement-list">
-                  {recentMovements.map((movement) => {
-                    const isIncome = movement.tipo === "INGRESO";
-
-                    return (
-                      <div
-                        className="movement-row"
-                        key={movement.id}
-                      >
-                        <div
-                          className={`movement-icon ${
-                            isIncome ? "income" : "expense"
-                          }`}
-                        >
-                          {isIncome ? (
-                            <ArrowDownRight size={18} />
-                          ) : (
-                            <ArrowUpRight size={18} />
-                          )}
-                        </div>
-
-                        <div className="movement-info">
-                          <strong>{movement.concepto}</strong>
-                          <span>
-                            {formatDate(movement.fecha)} ·{" "}
-                            {movement.medioPago}
-                          </span>
-                        </div>
-
-                        <strong
-                          className={`movement-amount ${
-                            isIncome ? "income-text" : "expense-text"
-                          }`}
-                        >
-                          {isIncome ? "+" : "−"}
-                          {formatMoney(movement.monto)}
-                        </strong>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h3>Estado de clientes</h3>
-                  <p>Resumen de cuentas corrientes</p>
-                </div>
-
-                <PawPrint size={19} />
               </div>
+            );
+          })}
+        </div>
 
-              <div className="client-summary-total">
-                <span>Total de clientes</span>
-                <strong>{dashboard.clientes.total}</strong>
-              </div>
-
-              <div className="client-summary-row">
-                <span>
-                  <span className="status-dot green-dot" />
-                  Al día
-                </span>
-                <strong>{dashboard.clientes.alDia}</strong>
-              </div>
-
-              <div className="client-summary-row">
-                <span>
-                  <span className="status-dot red-dot" />
-                  Con deuda
-                </span>
-                <strong>{dashboard.clientes.deudores}</strong>
-              </div>
-
-              <div className="client-summary-footer">
-                <Banknote size={17} />
-                <span>
-                  Total facturado:{" "}
-                  <strong>
-                    {formatMoney(dashboard.trabajos.totalFacturado)}
-                  </strong>
-                </span>
-              </div>
-            </section>
-          </div>
-        </>
-      ) : null}
-    </section>
+        <p className="dashboard-footnote">
+          Las barras comparan los importes entre medios de pago. Los valores
+          corresponden a todos los movimientos registrados.
+        </p>
+      </section>
+    </main>
   );
 }
-
-export default DashboardPage;

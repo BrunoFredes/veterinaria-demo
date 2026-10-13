@@ -1,10 +1,19 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import { ToastProvider } from "./components/ui/ToastProvider";
+import {
+  aplicarEscalaVisual, aplicarTemaVisual, obtenerEscalaVisual, obtenerTemaVisual,
+} from "./utils/preferencias";
 
-createRoot(document.getElementById('root')!).render(
+aplicarEscalaVisual(obtenerEscalaVisual());
+aplicarTemaVisual(obtenerTemaVisual());
+
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </StrictMode>,
-)
+);
