@@ -2,24 +2,27 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../services/api";
-import ConfirmDialog from "../components/ui/ConfirmDialog";
-import { useToast } from "../components/ui/ToastProvider";
 
 interface DashboardData {
+  periodo: "hoy" | "mes";
+
   clientes: {
     total: number;
     alDia: number;
     deudores: number;
   };
+
   trabajos: {
     totalFacturado: number;
     totalPagado: number;
     totalDeuda: number;
   };
+
   caja: {
     totalIngresos: number;
     totalEgresos: number;
     saldo: number;
+    efectivoActual: number;
     ingresosPorMedio: {
       efectivo: number;
       transferencia: number;
@@ -53,6 +56,7 @@ export default function DashboardPage() {
   const [datos, setDatos] = useState<DashboardData | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [periodo, setPeriodo] = useState<"hoy" | "mes">("mes");
 
   useEffect(() => {
     let activo = true;
@@ -62,7 +66,9 @@ export default function DashboardPage() {
         setCargando(true);
         setError("");
 
-        const respuesta = await api.get<DashboardData>("/dashboard");
+        const respuesta = await api.get<DashboardData>(
+          `/dashboard?periodo=${periodo}`,
+        );
 
         if (activo) {
           setDatos(respuesta);
@@ -85,7 +91,7 @@ export default function DashboardPage() {
     return () => {
       activo = false;
     };
-  }, []);
+  }, [periodo]);
 
   if (cargando) {
     return (
@@ -121,6 +127,7 @@ export default function DashboardPage() {
   }
 
   const { clientes, trabajos, caja } = datos;
+
   const maximoMedioPago = Math.max(
     caja.ingresosPorMedio.efectivo,
     caja.ingresosPorMedio.transferencia,
@@ -137,6 +144,8 @@ export default function DashboardPage() {
   const porcentajeClientesAlDia =
     clientes.total > 0 ? (clientes.alDia / clientes.total) * 100 : 0;
 
+  const etiquetaPeriodo = periodo === "hoy" ? "de hoy" : "del mes";
+
   return (
     <main className="page dashboard-page">
       <header className="page-heading dashboard-heading">
@@ -152,27 +161,48 @@ export default function DashboardPage() {
           <Link to="/clientes" className="button button-secondary">
             Ver clientes
           </Link>
+
           <Link to="/caja" className="button button-primary">
             Ir a caja
           </Link>
         </div>
       </header>
 
-      <section className="dashboard-section" aria-labelledby="finanzas-title">
+      <section
+        className="dashboard-section"
+        aria-labelledby="finanzas-title"
+      >
         <div className="dashboard-section-heading">
           <div>
             <p className="page-eyebrow">Finanzas</p>
             <h2 id="finanzas-title">Resumen económico</h2>
           </div>
+
+          <label className="cash-filter-field">
+            <span>Período de ingresos y egresos</span>
+            <select
+              value={periodo}
+              onChange={(event) =>
+                setPeriodo(event.target.value as "hoy" | "mes")
+              }
+            >
+              <option value="hoy">Hoy</option>
+              <option value="mes">Este mes</option>
+            </select>
+          </label>
         </div>
 
         <div className="dashboard-metrics">
           <article className="dashboard-metric">
             <div className="dashboard-metric-top">
-              <span className="dashboard-metric-label">Total facturado</span>
+              <span className="dashboard-metric-label">
+                Total facturado
+              </span>
               <span className="dashboard-metric-icon">↗</span>
             </div>
+
             <strong>{pesos(trabajos.totalFacturado)}</strong>
+
             <span className="dashboard-metric-caption">
               Importe de todos los trabajos
             </span>
@@ -180,12 +210,16 @@ export default function DashboardPage() {
 
           <article className="dashboard-metric">
             <div className="dashboard-metric-top">
-              <span className="dashboard-metric-label">Total cobrado</span>
+              <span className="dashboard-metric-label">
+                Total cobrado
+              </span>
               <span className="dashboard-metric-icon">✓</span>
             </div>
+
             <strong className="dashboard-positive">
               {pesos(trabajos.totalPagado)}
             </strong>
+
             <span className="dashboard-metric-caption">
               Pagos registrados de clientes
             </span>
@@ -193,9 +227,12 @@ export default function DashboardPage() {
 
           <article className="dashboard-metric">
             <div className="dashboard-metric-top">
-              <span className="dashboard-metric-label">Deuda pendiente</span>
+              <span className="dashboard-metric-label">
+                Deuda pendiente
+              </span>
               <span className="dashboard-metric-icon">◷</span>
             </div>
+
             <strong
               className={
                 trabajos.totalDeuda > 0
@@ -205,6 +242,7 @@ export default function DashboardPage() {
             >
               {pesos(trabajos.totalDeuda)}
             </strong>
+
             <span className="dashboard-metric-caption">
               Saldo que deben los clientes
             </span>
@@ -212,18 +250,24 @@ export default function DashboardPage() {
 
           <article className="dashboard-metric dashboard-metric-highlight">
             <div className="dashboard-metric-top">
-              <span className="dashboard-metric-label">Saldo de caja</span>
+              <span className="dashboard-metric-label">
+                Efectivo físico actual
+              </span>
               <span className="dashboard-metric-icon">＄</span>
             </div>
+
             <strong
               className={
-                caja.saldo < 0 ? "dashboard-negative" : "dashboard-positive"
+                caja.efectivoActual < 0
+                  ? "dashboard-negative"
+                  : "dashboard-positive"
               }
             >
-              {pesos(caja.saldo)}
+              {pesos(caja.efectivoActual)}
             </strong>
+
             <span className="dashboard-metric-caption">
-              Ingresos menos egresos registrados
+              Dinero físico disponible en la caja
             </span>
           </article>
         </div>
@@ -236,6 +280,7 @@ export default function DashboardPage() {
               <p className="page-eyebrow">Cartera de clientes</p>
               <h2>Estado de clientes</h2>
             </div>
+
             <Link to="/clientes" className="dashboard-text-link">
               Ver listado →
             </Link>
@@ -244,11 +289,16 @@ export default function DashboardPage() {
           <div className="dashboard-client-total">
             <strong>{clientes.total}</strong>
             <span>
-              {clientes.total === 1 ? "cliente registrado" : "clientes registrados"}
+              {clientes.total === 1
+                ? "cliente registrado"
+                : "clientes registrados"}
             </span>
           </div>
 
-          <div className="dashboard-client-bar" aria-label="Proporción de clientes al día y deudores">
+          <div
+            className="dashboard-client-bar"
+            aria-label="Proporción de clientes al día y deudores"
+          >
             <div
               className="dashboard-client-bar-paid"
               style={{ width: `${porcentajeClientesAlDia}%` }}
@@ -261,6 +311,7 @@ export default function DashboardPage() {
               <span>Al día</span>
               <strong>{clientes.alDia}</strong>
             </div>
+
             <div>
               <span className="dashboard-legend-dot dashboard-dot-debt" />
               <span>Deudores</span>
@@ -288,6 +339,7 @@ export default function DashboardPage() {
               <p className="page-eyebrow">Movimientos</p>
               <h2>Resumen de caja</h2>
             </div>
+
             <Link to="/caja" className="dashboard-text-link">
               Ver caja →
             </Link>
@@ -295,13 +347,14 @@ export default function DashboardPage() {
 
           <div className="dashboard-cash-summary">
             <div>
-              <span>Ingresos</span>
+              <span>Ingresos {etiquetaPeriodo}</span>
               <strong className="dashboard-positive">
                 {pesos(caja.totalIngresos)}
               </strong>
             </div>
+
             <div>
-              <span>Egresos</span>
+              <span>Egresos {etiquetaPeriodo}</span>
               <strong className="dashboard-negative">
                 {pesos(caja.totalEgresos)}
               </strong>
@@ -309,15 +362,22 @@ export default function DashboardPage() {
           </div>
 
           <div className="dashboard-cash-balance">
-            <span>Saldo neto</span>
+            <span>Saldo contable histórico</span>
             <strong
               className={
-                caja.saldo < 0 ? "dashboard-negative" : "dashboard-positive"
+                caja.saldo < 0
+                  ? "dashboard-negative"
+                  : "dashboard-positive"
               }
             >
               {pesos(caja.saldo)}
             </strong>
           </div>
+
+          <p className="dashboard-footnote">
+            El saldo contable incluye los movimientos históricos de todos los
+            medios de pago. No representa necesariamente el efectivo físico.
+          </p>
         </article>
       </section>
 
@@ -334,6 +394,7 @@ export default function DashboardPage() {
             <i className="dashboard-legend-dot dashboard-dot-income" />
             Ingresos
           </span>
+
           <span>
             <i className="dashboard-legend-dot dashboard-dot-expense" />
             Egresos
@@ -347,7 +408,9 @@ export default function DashboardPage() {
 
             return (
               <div className="dashboard-payment-row" key={medio.key}>
-                <div className="dashboard-payment-name">{medio.label}</div>
+                <div className="dashboard-payment-name">
+                  {medio.label}
+                </div>
 
                 <div className="dashboard-payment-bars">
                   <div className="dashboard-payment-bar-track">
@@ -356,6 +419,7 @@ export default function DashboardPage() {
                       style={{ width: `${porcentaje(ingresos)}%` }}
                     />
                   </div>
+
                   <div className="dashboard-payment-bar-track">
                     <div
                       className="dashboard-payment-bar dashboard-payment-bar-expense"
@@ -365,8 +429,13 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="dashboard-payment-values">
-                  <span className="dashboard-positive">{pesos(ingresos)}</span>
-                  <span className="dashboard-negative">{pesos(egresos)}</span>
+                  <span className="dashboard-positive">
+                    {pesos(ingresos)}
+                  </span>
+
+                  <span className="dashboard-negative">
+                    {pesos(egresos)}
+                  </span>
                 </div>
               </div>
             );
@@ -374,8 +443,8 @@ export default function DashboardPage() {
         </div>
 
         <p className="dashboard-footnote">
-          Las barras comparan los importes entre medios de pago. Los valores
-          corresponden a todos los movimientos registrados.
+          Los importes por medio de pago corresponden a los movimientos{" "}
+          {etiquetaPeriodo}. Las barras comparan los valores entre medios.
         </p>
       </section>
     </main>

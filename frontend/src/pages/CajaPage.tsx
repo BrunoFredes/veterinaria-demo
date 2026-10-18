@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ArrowDownToLine,
   CalendarDays,
   CircleAlert,
   RefreshCw,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 
 import EgresoFormModal from "../components/caja/EgresoFormModal";
+import IngresoFormModal from "../components/caja/IngresoFormModal";
 import { api } from "../services/api";
 import type {
   MedioPago,
@@ -65,6 +67,18 @@ function CajaPage() {
   const [filtroMedio, setFiltroMedio] = useState<FiltroMedio>("TODOS");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+  
+const [ingresoModalOpen, setIngresoModalOpen] = useState(false);
+const [efectivoActual, setEfectivoActual] = useState(0);
+
+const loadEfectivo = useCallback(async () => {
+  try {
+    const respuesta = await api.get<{ saldo: number }>("/movimientos/efectivo");
+    setEfectivoActual(respuesta.saldo);
+  } catch (err) {
+    console.error("No se pudo cargar el efectivo actual:", err);
+  }
+}, []);
 
   const [egresoModalOpen, setEgresoModalOpen] = useState(false);
 
@@ -88,7 +102,8 @@ function CajaPage() {
 
   useEffect(() => {
     void loadMovimientos();
-  }, [loadMovimientos]);
+    void loadEfectivo();
+  }, [loadMovimientos, loadEfectivo]);
 
   const movimientosFiltrados = useMemo(() => {
     const term = busqueda.trim().toLocaleLowerCase("es-AR");
@@ -164,9 +179,15 @@ function CajaPage() {
     setFechaHasta("");
   }
 
+  
   async function handleEgresoSaved() {
     setEgresoModalOpen(false);
-    await loadMovimientos();
+    await Promise.all([loadMovimientos(), loadEfectivo()]);
+  }
+
+  async function handleIngresoSaved() {
+    setIngresoModalOpen(false);
+    await Promise.all([loadMovimientos(), loadEfectivo()]);
   }
 
   return (
@@ -180,14 +201,26 @@ function CajaPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="button button-primary"
-          onClick={() => setEgresoModalOpen(true)}
-        >
-          <ArrowDownLeft size={18} />
-          Registrar egreso
-        </button>
+        
+        <div className="cash-page-actions">
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => setIngresoModalOpen(true)}
+          >
+            <ArrowDownToLine size={18} />
+            Ingresar dinero
+          </button>
+
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => setEgresoModalOpen(true)}
+          >
+            <ArrowDownLeft size={18} />
+            Registrar egreso
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -242,6 +275,21 @@ function CajaPage() {
           >
             {formatMoney(resumen.ingresos - resumen.egresos)}
           </strong>
+        </article>
+        
+        <article className="cash-metric">
+          <div className="cash-metric-icon cash-balance">
+            <Wallet size={20} />
+          </div>
+          <span>Efectivo físico actual</span>
+          <strong
+            className={
+              efectivoActual < 0 ? "debt-amount" : "cash-balance-value"
+            }
+          >
+            {formatMoney(efectivoActual)}
+          </strong>
+          
         </article>
       </div>
 
@@ -488,6 +536,13 @@ function CajaPage() {
           onSaved={handleEgresoSaved}
         />
       )}
+      
+    {ingresoModalOpen && (
+      <IngresoFormModal
+        onClose={() => setIngresoModalOpen(false)}
+        onSaved={handleIngresoSaved}
+      />
+    )}
     </section>
   );
 }

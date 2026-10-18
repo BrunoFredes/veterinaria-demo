@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
@@ -14,8 +15,21 @@ import ClienteFormModal from "../components/clientes/ClienteFormModal";
 import { api } from "../services/api";
 import type { Cliente } from "../types/cliente";
 
+type ClienteConEstado = Cliente & {
+  deudaPendiente: number;
+  estadoCuenta: "DEUDOR" | "AL_DIA";
+};
+
+function normalizarTexto(texto: string): string {
+  return texto
+    .trim()
+    .toLocaleLowerCase("es-AR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function ClientesPage() {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clientes, setClientes] = useState<ClienteConEstado[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,13 +43,13 @@ function ClientesPage() {
     setError(null);
 
     try {
-      const data = await api.get<Cliente[]>("/clientes");
+      const data = await api.get<ClienteConEstado[]>("/clientes");
       setClientes(data);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudieron cargar los clientes."
+          : "No se pudieron cargar los clientes.",
       );
     } finally {
       setLoading(false);
@@ -47,14 +61,43 @@ function ClientesPage() {
   }, []);
 
   const clientesFiltrados = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase("es-AR");
+    const term = normalizarTexto(search);
 
     if (!term) return clientes;
 
+    const terminosDeudor = [
+      "deudor",
+      "deudores",
+      "adeuda",
+      "adeudan",
+      "adeudado",
+      "adeudados",
+      "con deuda",
+    ];
+
+    const terminosAlDia = [
+      "al dia",
+      "aldia",
+      "sin deuda",
+      "sin deudas",
+    ];
+
+    if (terminosDeudor.includes(term)) {
+      return clientes.filter(
+        (cliente) => cliente.estadoCuenta === "DEUDOR",
+      );
+    }
+
+    if (terminosAlDia.includes(term)) {
+      return clientes.filter(
+        (cliente) => cliente.estadoCuenta === "AL_DIA",
+      );
+    }
+
     return clientes.filter((cliente) => {
-      const nombre = cliente.nombre.toLocaleLowerCase("es-AR");
-      const telefono = cliente.telefono?.toLocaleLowerCase("es-AR") ?? "";
-      const direccion = cliente.direccion?.toLocaleLowerCase("es-AR") ?? "";
+      const nombre = normalizarTexto(cliente.nombre);
+      const telefono = normalizarTexto(cliente.telefono ?? "");
+      const direccion = normalizarTexto(cliente.direccion ?? "");
 
       return (
         nombre.includes(term) ||
@@ -80,15 +123,27 @@ function ClientesPage() {
     await loadClientes();
   }
 
+  const buscandoPorEstado = [
+    "deudor",
+    "deudores",
+    "adeuda",
+    "adeudan",
+    "adeudado",
+    "adeudados",
+    "con deuda",
+    "al dia",
+    "aldia",
+    "sin deuda",
+    "sin deudas",
+  ].includes(normalizarTexto(search));
+
   return (
     <section className="page">
       <div className="page-heading">
         <div>
           <span className="page-eyebrow">Gestión</span>
           <h2>Clientes</h2>
-          <p>
-            Administrá los clientes y sus cuentas corrientes.
-          </p>
+          <p>Administrá los clientes y sus cuentas corrientes.</p>
         </div>
 
         <button
@@ -107,7 +162,7 @@ function ClientesPage() {
           <input
             type="search"
             aria-label="Buscar clientes"
-            placeholder="Buscar por nombre, teléfono o dirección..."
+            placeholder="Nombre, teléfono, dirección o estado..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -158,7 +213,9 @@ function ClientesPage() {
 
             <p>
               {search
-                ? "Probá con otro nombre, teléfono o dirección."
+                ? buscandoPorEstado
+                  ? "No hay clientes que coincidan con ese estado."
+                  : "Probá con otro nombre, teléfono, dirección o estado."
                 : "Cuando registres tu primer cliente, aparecerá en esta lista."}
             </p>
 
@@ -179,6 +236,8 @@ function ClientesPage() {
               <thead>
                 <tr>
                   <th>Cliente</th>
+                  <th>Estado</th>
+                  <th>Deuda pendiente</th>
                   <th>Teléfono</th>
                   <th>Dirección</th>
                   <th>Observaciones</th>
@@ -192,7 +251,10 @@ function ClientesPage() {
                     <td>
                       <div className="client-name-cell">
                         <div className="client-avatar">
-                          {cliente.nombre.trim().charAt(0).toLocaleUpperCase("es-AR")}
+                          {cliente.nombre
+                            .trim()
+                            .charAt(0)
+                            .toLocaleUpperCase("es-AR")}
                         </div>
 
                         <div>
@@ -200,6 +262,30 @@ function ClientesPage() {
                           <span>Cliente #{cliente.id}</span>
                         </div>
                       </div>
+                    </td>
+
+                    <td>
+                      <span
+                        className={`client-status-badge ${
+                          cliente.estadoCuenta === "DEUDOR"
+                            ? "client-status-badge--deudor"
+                            : "client-status-badge--al-dia"
+                        }`}
+                      >
+                        {cliente.estadoCuenta === "DEUDOR"
+                          ? "Adeuda"
+                          : "Al día"}
+                      </span>
+                    </td>
+
+                    <td>
+                      <strong>
+                        {cliente.deudaPendiente.toLocaleString("es-AR", {
+                          style: "currency",
+                          currency: "ARS",
+                          maximumFractionDigits: 2,
+                        })}
+                      </strong>
                     </td>
 
                     <td>{cliente.telefono || "—"}</td>

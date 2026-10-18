@@ -48,14 +48,16 @@ function PagoFormModal({
     const amount = Number(monto);
 
     if (!Number.isSafeInteger(amount) || amount <= 0) {
-      setError("El importe debe ser un número entero mayor que cero.");
+      //setError("El importe debe ser un número entero mayor que cero.");
+      showToast("El importe debe ser un número entero mayor que cero.", "error");
       return;
     }
 
     if (amount > saldoPendiente) {
-      setError(
-        `El cobro supera el saldo pendiente de ${formatMoney(saldoPendiente)}.`
-      );
+      //setError(
+      //  `El cobro supera el saldo pendiente de ${formatMoney(saldoPendiente)}.`
+      //);
+      showToast(`El cobro supera el saldo pendiente de ${formatMoney(saldoPendiente)}.`, "error");
       return;
     }
 
@@ -88,7 +90,7 @@ function PagoFormModal({
           ? err.message
           : "No se pudo registrar el pago.";
 
-      setError(message);
+      //  setError(message);
       showToast(message, "error");
     } finally {
       setSaving(false);

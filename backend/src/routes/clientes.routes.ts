@@ -3,16 +3,50 @@ import { prisma } from "../lib/prisma.js";
 
 const router = Router();
 
-// GET /api/clientes
+ // GET /api/clientes
 router.get("/", async (_req, res) => {
   try {
     const clientes = await prisma.cliente.findMany({
       orderBy: {
         nombre: "asc",
       },
+      include: {
+        trabajos: {
+          select: {
+            total: true,
+            pagos: {
+              select: {
+                monto: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    res.json(clientes);
+    const resultado = clientes.map((cliente) => {
+      const deudaPendiente = cliente.trabajos.reduce(
+        (deudaTotal, trabajo) => {
+          const totalPagado = trabajo.pagos.reduce(
+            (total, pago) => total + pago.monto,
+            0,
+          );
+
+          return deudaTotal + Math.max(trabajo.total - totalPagado, 0);
+        },
+        0,
+      );
+
+      const { trabajos, ...datosCliente } = cliente;
+
+      return {
+        ...datosCliente,
+        deudaPendiente,
+        estadoCuenta: deudaPendiente > 0 ? "DEUDOR" : "AL_DIA",
+      };
+    });
+
+    res.json(resultado);
   } catch (error) {
     console.error("Error al obtener clientes:", error);
 
