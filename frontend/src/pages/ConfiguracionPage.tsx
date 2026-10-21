@@ -33,9 +33,9 @@ const opcionesEscala: {
   titulo: string;
   descripcion: string;
 }[] = [
-  { valor: "90", titulo: "Pequeño", descripcion: "Más contenido visible en pantalla" },
-  { valor: "100", titulo: "Normal", descripcion: "Tamaño predeterminado" },
-  { valor: "110", titulo: "Grande", descripcion: "Interfaz más cómoda de leer" },
+  { valor: "100", titulo: "Pequeño", descripcion: "Más contenido visible en pantalla" },
+  { valor: "110", titulo: "Normal", descripcion: "Tamaño predeterminado" },
+  { valor: "120", titulo: "Grande", descripcion: "Interfaz más cómoda de leer" },
 ];
 
 function formatearFecha(fecha: string | null): string {

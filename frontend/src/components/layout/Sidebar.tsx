@@ -1,8 +1,10 @@
+
 import {
   Banknote,
   LayoutDashboard,
   PawPrint,
   Settings,
+  X,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -29,9 +31,18 @@ const navigationItems = [
   },
 ];
 
-function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
-    <aside className="sidebar">
+    <aside
+      id="app-sidebar"
+      className={`sidebar ${isOpen ? "sidebar-open" : ""}`}
+      aria-label="Navegación principal"
+    >
       <div className="sidebar-brand">
         <div className="brand-icon">
           <PawPrint size={22} />
@@ -41,6 +52,15 @@ function Sidebar() {
           <span className="brand-name">Veterinaria</span>
           <span className="brand-subtitle">Gestión</span>
         </div>
+
+        <button
+          type="button"
+          className="sidebar-close-button"
+          onClick={onClose}
+          aria-label="Cerrar menú"
+        >
+          <X size={21} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -54,6 +74,7 @@ function Sidebar() {
               className={({ isActive }) =>
                 `nav-item ${isActive ? "active" : ""}`
               }
+              onClick={onClose}
             >
               <Icon size={20} />
               <span>{item.label}</span>

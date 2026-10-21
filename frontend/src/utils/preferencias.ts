@@ -1,13 +1,14 @@
-export type EscalaVisual = "90" | "100" | "110";
+export type EscalaVisual = "100" | "110" | "120";
 export type TemaVisual = "claro" | "oscuro";
 
 const CLAVE_ESCALA = "veterinaria-escala-visual";
 const CLAVE_TEMA = "veterinaria-tema-visual";
 
-export function obtenerEscalaVisual(): EscalaVisual {
-  const guardada = localStorage.getItem(CLAVE_ESCALA);
 
-  if (guardada === "90" || guardada === "110") {
+export function obtenerEscalaVisual(): EscalaVisual {
+  const guardada = localStorage.getItem("veterinaria-escala-visual");
+
+  if (guardada === "110" || guardada === "120") {
     return guardada;
   }
 

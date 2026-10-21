@@ -173,10 +173,7 @@ export default function DashboardPage() {
         aria-labelledby="finanzas-title"
       >
         <div className="dashboard-section-heading">
-          <div>
-            <p className="page-eyebrow">Finanzas</p>
-            <h2 id="finanzas-title">Resumen económico</h2>
-          </div>
+          
 
           <label className="cash-filter-field">
             <span>Período de ingresos y egresos</span>
@@ -193,38 +190,39 @@ export default function DashboardPage() {
         </div>
 
         <div className="dashboard-metrics">
+          {/* INGRESOS DEL PERÍODO */}
           <article className="dashboard-metric">
             <div className="dashboard-metric-top">
-              <span className="dashboard-metric-label">
-                Total facturado
-              </span>
+              <span className="dashboard-metric-label">Ingresos</span>
               <span className="dashboard-metric-icon">↗</span>
             </div>
 
-            <strong>{pesos(trabajos.totalFacturado)}</strong>
-
-            <span className="dashboard-metric-caption">
-              Importe de todos los trabajos
-            </span>
-          </article>
-
-          <article className="dashboard-metric">
-            <div className="dashboard-metric-top">
-              <span className="dashboard-metric-label">
-                Total cobrado
-              </span>
-              <span className="dashboard-metric-icon">✓</span>
-            </div>
-
             <strong className="dashboard-positive">
-              {pesos(trabajos.totalPagado)}
+              {pesos(caja.totalIngresos)}
             </strong>
 
             <span className="dashboard-metric-caption">
-              Pagos registrados de clientes
+              Ingresos {etiquetaPeriodo}
             </span>
           </article>
 
+          {/* EGRESOS DEL PERÍODO */}
+          <article className="dashboard-metric">
+            <div className="dashboard-metric-top">
+              <span className="dashboard-metric-label">Egresos</span>
+              <span className="dashboard-metric-icon">↘</span>
+            </div>
+
+            <strong className="dashboard-negative">
+              {pesos(caja.totalEgresos)}
+            </strong>
+
+            <span className="dashboard-metric-caption">
+              Egresos {etiquetaPeriodo}
+            </span>
+          </article>
+
+          {/* DEUDA TOTAL ACTUAL */}
           <article className="dashboard-metric">
             <div className="dashboard-metric-top">
               <span className="dashboard-metric-label">
@@ -244,14 +242,15 @@ export default function DashboardPage() {
             </strong>
 
             <span className="dashboard-metric-caption">
-              Saldo que deben los clientes
+              Deuda actual de todos los clientes
             </span>
           </article>
 
+          {/* EFECTIVO FÍSICO ACTUAL */}
           <article className="dashboard-metric dashboard-metric-highlight">
             <div className="dashboard-metric-top">
               <span className="dashboard-metric-label">
-                Efectivo físico actual
+                Dinero en caja
               </span>
               <span className="dashboard-metric-icon">＄</span>
             </div>
@@ -267,7 +266,7 @@ export default function DashboardPage() {
             </strong>
 
             <span className="dashboard-metric-caption">
-              Dinero físico disponible en la caja
+              Efectivo físico disponible actualmente
             </span>
           </article>
         </div>

@@ -3181,3 +3181,179 @@ a {
     justify-content: center;
   }
 }
+
+/* Menú móvil: oculto en escritorio */
+.mobile-menu-toggle,
+.sidebar-close-button,
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    z-index: 1001;
+    width: 260px;
+    max-width: 85vw;
+    padding: 24px 16px;
+
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.25s ease,
+      visibility 0.25s ease;
+
+    overflow-y: auto;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .sidebar-brand {
+    justify-content: flex-start;
+    padding: 4px 0 28px;
+  }
+
+  .sidebar-brand > div:last-child,
+  .sidebar-nav .nav-item span,
+  .sidebar-footer {
+    display: flex;
+  }
+
+  .sidebar-brand > div:last-child {
+    flex-direction: column;
+  }
+
+  .sidebar-close-button {
+    display: grid;
+    place-items: center;
+    margin-left: auto;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+
+    border: 1px solid var(--color-border);
+    border-radius: 9px;
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .sidebar-nav .nav-item {
+    justify-content: flex-start;
+    padding: 12px;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgb(0 0 0 / 45%);
+  }
+
+  .app-main {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .app-header {
+    padding-left: 68px;
+  }
+
+  .mobile-menu-toggle {
+    display: grid;
+    place-items: center;
+
+    position: fixed;
+    top: 21px;
+    left: 16px;
+    z-index: 999;
+
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}
+/* La lista de movimientos tiene altura limitada y scroll propio */
+.cash-table-panel .table-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Mantiene los encabezados visibles mientras se recorre la lista */
+.cash-table-panel .cash-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.cash-table-panel .cash-table thead th {
+  background: var(--color-surface);
+}
+/* Clientes: limitar la altura de la lista */
+.clients-panel .table-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Detalle del cliente: limitar la lista de trabajos */
+.account-work-panel .table-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Mantener visibles los encabezados al hacer scroll */
+.clients-panel .data-table thead,
+.account-work-panel .data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.clients-panel .data-table thead th,
+.account-work-panel .data-table thead th {
+  background: var(--color-surface);
+}
+/* Limitar la altura del historial de cobros */
+.account-payments-panel .table-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Mantener visibles los encabezados */
+.account-payments-panel .data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.account-payments-panel .data-table thead th {
+  background: var(--color-surface);
+}
