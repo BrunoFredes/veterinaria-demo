@@ -1,47 +1,28 @@
+
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
+import DemoNotice from "./components/DemoNotice";
+
 import DashboardPage from "./pages/DashboardPage";
 import ClientesPage from "./pages/ClientesPage";
 import ClienteDetallePage from "./pages/ClienteDetallePage";
 import CajaPage from "./pages/CajaPage";
 import ConfiguracionPage from "./pages/ConfiguracionPage";
 
-
 function App() {
   return (
     <BrowserRouter>
+      <DemoNotice />
+
       <Routes>
         <Route element={<AppLayout />}>
-          <Route
-            path="/"
-            element={<Navigate to="/dashboard" replace />}
-          />
-
-          <Route
-            path="/dashboard"
-            element={<DashboardPage />}
-          />
-
-          <Route
-            path="/clientes"
-            element={<ClientesPage />}
-          />
-
-          <Route
-            path="/clientes/:id"
-            element={<ClienteDetallePage />}
-          />
-
-          <Route
-            path="/caja"
-            element={<CajaPage />}
-          />
-
-          <Route
-            path="/configuracion"
-            element={<ConfiguracionPage />}
-          />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/clientes" element={<ClientesPage />} />
+          <Route path="/clientes/:id" element={<ClienteDetallePage />} />
+          <Route path="/caja" element={<CajaPage />} />
+          <Route path="/configuracion" element={<ConfiguracionPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
