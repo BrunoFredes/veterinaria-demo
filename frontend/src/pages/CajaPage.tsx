@@ -47,10 +47,6 @@ function getDateKey(value: string) {
   return `${year}-${month}-${day}`;
 }
 
-function getToday() {
-  return getDateKey(new Date().toISOString());
-}
-
 const medioPagoLabel: Record<MedioPago, string> = {
   EFECTIVO: "Efectivo",
   TRANSFERENCIA: "Transferencia",
